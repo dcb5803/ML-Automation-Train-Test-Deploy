@@ -1,0 +1,36 @@
+# .github/workflows/deploy.yml
+name: ML Train-Test-Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: pip install pandas scikit-learn flask joblib
+
+    - name: Run training and testing
+      run: python app.py
+
+    - name: Build Docker image
+      run: docker build -t ml-app .
+
+    - name: Push to DockerHub (optional)
+      env:
+        DOCKER_USER: ${{ secrets.DOCKER_USER }}
+        DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+      run: |
+        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+        docker tag ml-app $DOCKER_USER/ml-app
+        docker push $DOCKER_USER/ml-app
